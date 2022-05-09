@@ -4,16 +4,22 @@ var cookieParser = require('cookie-parser')
 const db = require("./config/conexion");
 const express = require('express');
 const multer = require('multer');
-const cors =  require('cors');
+const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+
 const app = express();
 
+const httpServer = createServer(app);
+const io = new Server(httpServer)
 const disckstorage = multer.diskStorage({
     destination: path.join(__dirname, '/imagenes/'),
     filename: (req, file, cb) => {
         cb(null, Date.now() + path.extname(file.originalname));
-    }})
+    }
+})
 
 const fileUpload = multer({
     storage: disckstorage
@@ -24,7 +30,7 @@ const fileUpload2 = multer({
     storage: disckstorage
 }).single('Imagen')
 
-app.use(express.urlencoded({ extended:false }));
+app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cookieParser())
 app.use(cors());
@@ -36,20 +42,20 @@ app.use(express.static(path.join(__dirname, 'dbimages/')))
 app.use(express.static(path.join(__dirname, 'imgprod/')))
 //API REST
 
-app.get('/productos',(req,res) => {
+app.get('/productos', (req, res) => {
 
-    db.query(" SELECT * FROM vista_productos ",(err,data)=>{
+    db.query(" SELECT * FROM vista_productos ", (err, data) => {
         if (err) {
             return err;
         }
 
         data.map(img => {
-           
+
             fs.writeFileSync(path.join(__dirname, '/imgprod/' + img.id + 'prod-planetadulce.png'), img.img)
             // data.push(...{ imagen: img.id + 'prod-planetadulce.png'});
         })
         console.log(data)
-        res.json({productos: data,});
+        res.json({ productos: data, });
     })
 
 });
@@ -57,7 +63,7 @@ app.get('/productos/:id', (req, res) => {
     console.log(req.params.id);
     const ID = req.params.id;
     const sql = "SELECT * FROM vista_productos WHERE id = ?"
-    db.query(sql,[ID], (err, data) => {
+    db.query(sql, [ID], (err, data) => {
         if (err) {
             return err;
         }
@@ -76,14 +82,14 @@ app.delete('/productos/:id', (req, res) => {
             return err;
         }
 
-         res.json({
+        res.json({
             mensaje: "Eliminado con exito",
             result
         });
     })
 
 })
-app.put('/productos',(req,res)=>{
+app.put('/productos', (req, res) => {
     console.log(Object.values(req.body));
     const values = Object.values(req.body)
     const sql = "UPDATE productos SET nombre = ?,precio = ?,marca = ? WHERE id = ? ";
@@ -93,9 +99,9 @@ app.put('/productos',(req,res)=>{
                 mensaje: err
             });
         }
-      
+
         res.json({
-            mensaje:'Agregado con Exito'
+            mensaje: 'Agregado con Exito'
         });
     })
 })
@@ -110,7 +116,7 @@ app.post('/productos', fileUpload2, (req, res) => {
     const precio3 = req.body.Precio3
     const img = fs.readFileSync(path.join(__dirname, '/imagenes/' + req.file.filename))
     const sql = "INSERT INTO productos(nombre,descripcion,img,preciob,precio,precio2,precio3,marca) VALUES (?,?,?,?,?,?,?,?)"
-    db.query(sql, [nombre, descripcion, img,preciob,precio,precio2,precio3,marca], (err, data) => {
+    db.query(sql, [nombre, descripcion, img, preciob, precio, precio2, precio3, marca], (err, data) => {
         if (err) {
             console.log(err);
             return err;
@@ -131,7 +137,7 @@ app.get('/usuarios', (req, res) => {
             return err;
         }
 
-        res.json( data );
+        res.json(data);
     })
 
 });
@@ -147,7 +153,7 @@ app.post('/usuarios', (req, res) => {
             res.json({
                 result: 0,
                 mensaje: 'Error al agregar',
-                error:err
+                error: err
             });
         }
 
@@ -162,12 +168,12 @@ app.post('/usuarios', (req, res) => {
 app.post('/image', fileUpload, (req, res) => {
     console.log(req.body.idInsert);
     const id = req.body.idInsert
-    const imagen =  fs.readFileSync(path.join(__dirname, '/imagenes/'+req.file.filename))
+    const imagen = fs.readFileSync(path.join(__dirname, '/imagenes/' + req.file.filename))
     const sql = "UPDATE usuarios SET imagen = ? WHERE id = ? ";
     db.query(sql, [imagen, id], (err, data) => {
         if (err) {
-           console.log(err);
-           return err;
+            console.log(err);
+            return err;
         }
         res.json({
             result: 1,
@@ -183,17 +189,17 @@ app.get('/usuarios/:id', (req, res) => {
     const sql = "SELECT * FROM usuarios WHERE id = ?"
     db.query(sql, [ID], (err, data) => {
         if (err) {
-           
+
             return err;
         }
 
-        fs.writeFileSync(path.join(__dirname, '/dbimages/'+ID+'planetadulce.png'), data[0].imagen)
-        
+        fs.writeFileSync(path.join(__dirname, '/dbimages/' + ID + 'planetadulce.png'), data[0].imagen)
 
-       res.json({
-           data,
-           imagen:ID+'planetadulce.png' 
-    });
+
+        res.json({
+            data,
+            imagen: ID + 'planetadulce.png'
+        });
     })
 
 })
@@ -226,7 +232,7 @@ app.get('/tiponegocios/', (req, res) => {
         res.json(data);
     })
 
-    
+
 });
 app.get('/marcas/', (req, res) => {
 
@@ -235,11 +241,11 @@ app.get('/marcas/', (req, res) => {
             return err;
         }
         data.map(img => {
-           
+
             fs.writeFileSync(path.join(__dirname, '/imgprod/' + img.id + 'marcas-planetadulce.png'), img.img)
             // data.push(...{ imagen: img.id + 'prod-planetadulce.png'});
         })
-        res.json({marcas:data});
+        res.json({ marcas: data });
     })
 
 
@@ -274,8 +280,19 @@ app.get('/cuadrantes/', (req, res) => {
 app.use('/', require('./app/routes/router'))
 
 
+io.on("connection", (socket) => {
+    socket.on('entrarChat', (data) => {
+        socket.join(data);
+    })
+
+    socket.on('mensajePrivado', (mensaje) => {
+        console.log(mensaje.sala)
+        socket.broadcast.to(mensaje.sala).emit('mensajeRoom', mensaje)
+    })
+});
 
 
-app.listen(PORT,()=>{
-    console.log('listening on port '+PORT);
+
+httpServer.listen(PORT, () => {
+    console.log('listening on port ' + PORT);
 })
